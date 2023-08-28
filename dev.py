@@ -1,18 +1,28 @@
-# dev sur desktop
-
 from time import sleep
 import asyncio
+from adafruit_pca9685 import PCA9685
+import busio
+from board import SCL, SDA
+# Create the I2C bus interface.
+i2c_bus = busio.I2C(SCL, SDA)
 
+# Create a simple PCA9685 class instance.
+pca = PCA9685(i2c_bus)
+pca.frequency = 60
 
 MIN = 6000
 MAX = 9500
 
+
+def range_2ways(start,stop):
+    return range(start, stop, 1 if start < stop else -1)
 
 class stepMotor():
     def __init__(self,channel, min_position = MIN, max_position = MAX):
         self.min_position = min_position
         self.max_position = max_position
         self.current_position = None
+        self.channel = channel
         self.initMotor()
     
     def initMotor(self):
@@ -23,57 +33,32 @@ class stepMotor():
         self.current_position = (self.min_position+self.max_position)/2
        
     async def goTo(self,target, speed = 1):
+        print('target : ',target)
         try:
-            for p in range(int(self.current_position), target):
-                print(p)
-                await asyncio.sleep(0.01)
-            print('Mouvement terminé, déplacement de {}'.format(self.current_position - target) )
+            for p in range_2ways(int(self.current_position), target): 
+                #print(p)
+                pca.channels[self.channel].duty_cycle = p
+                await asyncio.sleep(0.001)
+            print('Mouvement terminé {}, déplacement de {}'.format(self.channel, self.current_position - target) )
         except asyncio.CancelledError:
             print('Mouvement annulé en route !') # Si le mouvement est arrếté
         finally:
             self.current_position = p
+            pca.channels[self.channel].duty_cycle = 0
             print(0) # Si le mouvement est annulé avant la fin ou terminé, on coupe le moteur.
 
 
-motor = stepMotor(0)
+base = stepMotor(0)
+epaule = stepMotor(1)
 
 async def main():
     while True :
-        await asyncio.sleep(5)
-        task = asyncio.create_task(motor.goTo(8000)) # Annuler toute autre tache qui concerne ce moteur !
+        task = asyncio.create_task(base.goTo(6200)) # Annuler toute autre tache qui concerne ce moteur !
+        task2 = asyncio.create_task(epaule.goTo(8500))
+        await asyncio.sleep(15)
 
 
 asyncio.run(main())
 
-"""
-import threading
-toto='debut'
-def termine():
-    toto='fin'
 
-def main():
-    print('Hello ...')
-    sleep(3)
-    print('... World!')
-    termine()
-
-
-t1 = threading.Thread(target=main)
-t2 = threading.Thread(target=main)
-
-t1.start()
-t2.start()
-
-while True :
-    print(toto)
-    sleep(0.5)
-    
-   
-@asyncio.coroutine
-def stepper():
-    for e in range(0,100):
-        print(e)
-        sleep(0.02) 
-    
-"""
 
