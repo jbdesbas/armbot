@@ -11,7 +11,7 @@ i2c_bus = busio.I2C(SCL, SDA)
 
 # Create a simple PCA9685 class instance.
 pca = PCA9685(i2c_bus)
-
+pca.frequency = 60
 
 
 MIN = 5500
