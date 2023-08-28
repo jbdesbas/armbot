@@ -44,7 +44,7 @@ class stepMotor():
             for p in range_2ways(int(self.current_position), target): 
                 #print(p)
                 pca.channels[self.channel].duty_cycle = p
-                await asyncio.sleep(0.001)
+                await asyncio.sleep(0.0001)
         except asyncio.CancelledError:
             print('Mouvement annulé en route !', self.channel) # Si le mouvement est arrếté
         finally:
@@ -62,11 +62,11 @@ async def main():
         asyncio.create_task(base.goTo(6200)) # Annuler toute autre tache qui concerne ce moteur !
         asyncio.create_task(shoulder.goTo(7000))
         asyncio.create_task(elbow.goTo(7000))
-        await asyncio.sleep(15)
+        await asyncio.sleep(5)
         asyncio.create_task(base.goTo(9000)) # Annuler toute autre tache qui concerne ce moteur !
         asyncio.create_task(shoulder.goTo(9000))
         asyncio.create_task(elbow.goTo(4000))
-        await asyncio.sleep(15)
+        await asyncio.sleep(5)
 
 
 asyncio.run(main())
