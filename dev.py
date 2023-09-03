@@ -19,8 +19,8 @@ motors_config = {
     'elbow' : {'channel' : 2, 'min_position' : 3000, 'max_position': 8000}
 }
 
-def range_2ways(start,stop):
-    return range(start, stop, 1 if start < stop else -1)
+def range_2ways(start,stop, rge):
+    return range(start, stop, rge if start < stop else -1*rge)
 
 class stepMotor():
     def __init__(self,channel, min_position = MIN, max_position = MAX):
@@ -44,10 +44,10 @@ class stepMotor():
         print('{} go to {}'.format(self.channel, target) )
         await self.lock.acquire()
         try:
-            for p in range_2ways(int(self.current_position), target): 
+            for p in range_2ways(int(self.current_position), target, 2): 
                 #print(p)
                 pca.channels[self.channel].duty_cycle = p
-                await asyncio.sleep(0.0001)
+                await asyncio.sleep(0.001)
         except asyncio.CancelledError:
             print('Mouvement annulé en route !', self.channel) # Si le mouvement est arrếté
         finally:
