@@ -41,6 +41,9 @@ class stepMotor():
     
     
     async def goTo(self,target, speed = 1):
+        if target > self.max_position or target < self.min_position :
+            print('{} is out of range <{},{}>'.format(target, self.min_position, self.max_position))
+            target = min(max(self.min_position, target), self.max_position)
         print('{} go to {}'.format(self.channel, target) )
         await self.lock.acquire()
         try:
