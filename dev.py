@@ -59,25 +59,34 @@ class stepMotor():
             self.current_position = p
             self.lock.release()
 
+class Motion():
+    """A motion is a combinaition of motor motion to reach a position"""
+    def __init__(self):
+        self.lock = asyncio.Lock()
+        self.moves = list() # Si plusieurs fois le même moteur, les déplacements ne sont pas effectué simultanément (grâce au lock sur la la class Motor). TODO : Empêcher d'avoir plusieurs fois le même moteur ?
+        
+    async def go(self):
+        tasks = [asyncio.create_task(m) for m in self.moves]
+        await asyncio.gather(*tasks)
+        self.moves = list()
+
+class Arm():
+    def __init__(self):
+        self.motion = Motion()
+        self.motor = dict(
+            base = stepMotor(**motors_config['base']),
+            shoulder = stepMotor(**motors_config['shoulder']),
+            elbow = stepMotor(**motors_config['elbow'])
+        )
 
 if __name__ == "__main__":
 
-    base = stepMotor(**motors_config['base'])
-    shoulder = stepMotor(**motors_config['shoulder'])
-    elbow = stepMotor(**motors_config['elbow'])
+    arm = Arm()
 
-    async def main():
-        tasks=[]
-        for x in range(1,3):
-            tasks.append(asyncio.create_task(base.goTo(6200))) # TODO Grouper par "mouvement" (combinaison de déplacement des différents moteurs, ne passer au mouvement suivant que quand tous les moteurs ont fini
-            tasks.append(asyncio.create_task(shoulder.goTo(7000)))
-            tasks.append(asyncio.create_task(elbow.goTo(7000)))
-            
-            tasks.append(asyncio.create_task(base.goTo(9000))) 
-            tasks.append(asyncio.create_task(shoulder.goTo(9000)))
-            tasks.append(asyncio.create_task(elbow.goTo(4000)))
-            await asyncio.gather(*tasks)
+    arm.motion.moves.append(arm.motor['base'].goTo(10000))
+    arm.motion.moves.append(arm.motor['shoulder'].goTo(7000))
+    arm.motion.moves.append(arm.motor['base'].goTo(7000))
 
-    asyncio.get_event_loop().run_until_complete(main())
+    asyncio.get_event_loop().run_until_complete(arm.motion.go())
 
 
