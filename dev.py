@@ -38,7 +38,8 @@ class stepMotor():
         sleep(1.5) #Pour que les moteurs s'initient 1 par 1
         pca.channels[self.channel].duty_cycle = 0
         self.current_position = (self.min_position+self.max_position)/2
-       
+    
+    
     async def goTo(self,target, speed = 1):
         print('{} go to {}'.format(self.channel, target) )
         await self.lock.acquire()
@@ -56,24 +57,24 @@ class stepMotor():
             self.lock.release()
 
 
-base = stepMotor(**motors_config['base'])
-shoulder = stepMotor(**motors_config['shoulder'])
-elbow = stepMotor(**motors_config['elbow'])
+if __name__ == "__main__":
 
-async def main():
-    tasks=[]
-    for x in range(1,3):
-        tasks.append(asyncio.create_task(base.goTo(6200))) # TODO Grouper par "mouvement" (combinaison de déplacement des différents moteurs, ne passer au mouvement suivant que quand tous les moteurs ont fini
-        tasks.append(asyncio.create_task(shoulder.goTo(7000)))
-        tasks.append(asyncio.create_task(elbow.goTo(7000)))
-        
-        tasks.append(asyncio.create_task(base.goTo(9000))) 
-        tasks.append(asyncio.create_task(shoulder.goTo(9000)))
-        tasks.append(asyncio.create_task(elbow.goTo(4000)))
-        await asyncio.gather(*tasks)
+    base = stepMotor(**motors_config['base'])
+    shoulder = stepMotor(**motors_config['shoulder'])
+    elbow = stepMotor(**motors_config['elbow'])
 
+    async def main():
+        tasks=[]
+        for x in range(1,3):
+            tasks.append(asyncio.create_task(base.goTo(6200))) # TODO Grouper par "mouvement" (combinaison de déplacement des différents moteurs, ne passer au mouvement suivant que quand tous les moteurs ont fini
+            tasks.append(asyncio.create_task(shoulder.goTo(7000)))
+            tasks.append(asyncio.create_task(elbow.goTo(7000)))
+            
+            tasks.append(asyncio.create_task(base.goTo(9000))) 
+            tasks.append(asyncio.create_task(shoulder.goTo(9000)))
+            tasks.append(asyncio.create_task(elbow.goTo(4000)))
+            await asyncio.gather(*tasks)
 
-
-asyncio.get_event_loop().run_until_complete(main())
+    asyncio.get_event_loop().run_until_complete(main())
 
 
