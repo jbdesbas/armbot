@@ -1,13 +1,12 @@
 from time import sleep
 import asyncio
-from adafruit_pca9685 import PCA9685
-import busio
-from board import SCL, SDA
-# Create the I2C bus interface.
-i2c_bus = busio.I2C(SCL, SDA)
+from lib.micropython_pca9685 import PCA9685
+from machine import I2C, Pin
 
+# Create the I2C bus interface.
+i2c_bus = I2C(0, scl=Pin(22), sda=Pin(21))
 # Create a simple PCA9685 class instance.
-pca = PCA9685(i2c_bus)
+pca = PCA9685(i2c_bus, address=0x40)
 pca.frequency = 60
 
 MIN = 6000
