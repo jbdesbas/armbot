@@ -15,13 +15,19 @@ MAX = 9500
 motors_config = {
     'base' : {'channel' : 0, 'min_position' : 6000, 'max_position': 9500},
     'shoulder' : {'channel' : 1, 'min_position' : 5500, 'max_position': 10000},
-    'elbow' : {'channel' : 2, 'min_position' : 3000, 'max_position': 8000}
+    'elbow' : {'channel' : 2, 'min_position' : 3000, 'max_position': 8000},
+    'wrist' : {'channel': 3, 'min_position' : 5000, 'max_position': 10000},
+    'clamp': {'channel': 4, 'min_position': 7500, 'max_position': 10000}
+
 }
+
+loop =  asyncio.get_event_loop()
 
 def range_2ways(start,stop, rge):
     return range(start, stop, rge if start < stop else -1*rge)
 
-class stepMotor():
+
+class StepMotor:
     def __init__(self,channel, min_position = MIN, max_position = MAX):
         self.min_position = min_position
         self.max_position = max_position
@@ -37,8 +43,7 @@ class stepMotor():
         sleep(1.5) #Pour que les moteurs s'initient 1 par 1
         pca.channels[self.channel].duty_cycle = 0
         self.current_position = (self.min_position+self.max_position)/2
-    
-    
+
     async def goTo(self,target, speed = 1):
         if target > self.max_position or target < self.min_position :
             print('{} is out of range <{},{}>'.format(target, self.min_position, self.max_position))
@@ -58,34 +63,40 @@ class stepMotor():
             self.current_position = p
             self.lock.release()
 
-class Motion():
+    def goToMin(self):
+        self.goTo(self.min_position)
+
+    def goToMax(self):
+        self.goTo(self.max_position)
+
+class Motion:
     """A motion is a combinaition of motor motion to reach a position"""
     def __init__(self):
         self.lock = asyncio.Lock()
         self.moves = list() # Si plusieurs fois le même moteur, les déplacements ne sont pas effectué simultanément (grâce au lock sur la la class Motor). TODO : Empêcher d'avoir plusieurs fois le même moteur ?
-        
-    async def go(self):
+
+    def append(self, task):
+        self.moves.append(task)
+
+    async def go_async(self):
         tasks = [asyncio.create_task(m) for m in self.moves]
         await asyncio.gather(*tasks)
         self.moves = list()
 
-class Arm():
+    def go(self):
+        loop.run_until_complete(self.go_async())
+
+
+class Arm:
     def __init__(self):
         self.motion = Motion()
         self.motor = dict(
-            base = stepMotor(**motors_config['base']),
-            shoulder = stepMotor(**motors_config['shoulder']),
-            elbow = stepMotor(**motors_config['elbow'])
+            base = StepMotor(**motors_config['base']),
+            shoulder = StepMotor(**motors_config['shoulder']),
+            elbow = StepMotor(**motors_config['elbow']),
+            wrist=StepMotor(**motors_config['wrist']),
+            clamp = StepMotor(**motors_config['clamp'])
         )
 
-if __name__ == "__main__":
-
-    arm = Arm()
-
-    arm.motion.moves.append(arm.motor['base'].goTo(10000))
-    arm.motion.moves.append(arm.motor['shoulder'].goTo(7000))
-    arm.motion.moves.append(arm.motor['base'].goTo(7000))
-
-    asyncio.get_event_loop().run_until_complete(arm.motion.go())
 
 
