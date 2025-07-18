@@ -2,6 +2,8 @@
 
 A library to control a robotic arm with ESP32
 
+![arm](./arm.jpg)
+
 ## Exemple
 
 ```python
