@@ -21,7 +21,6 @@ motors_config = {
 
 }
 
-loop =  asyncio.get_event_loop()
 
 def range_2ways(start,stop, rge):
     return range(start, stop, rge if start < stop else -1*rge)
@@ -35,7 +34,7 @@ class StepMotor:
         self.channel = channel
         self.initMotor()
         self.lock = asyncio.Lock()
-    
+
     def initMotor(self):
         """centrale position"""
         pca.channels[self.channel].duty_cycle = int((self.min_position+self.max_position)/2)
@@ -45,13 +44,14 @@ class StepMotor:
         self.current_position = (self.min_position+self.max_position)/2
 
     async def goTo(self,target, speed = 1):
+        p = self.current_position
         if target > self.max_position or target < self.min_position :
             print('{} is out of range <{},{}>'.format(target, self.min_position, self.max_position))
             target = min(max(self.min_position, target), self.max_position)
         print('{} go to {}'.format(self.channel, target) )
         await self.lock.acquire()
         try:
-            for p in range_2ways(int(self.current_position), target, 2): 
+            for p in range_2ways(int(self.current_position), int(target), 2):
                 #print(p)
                 pca.channels[self.channel].duty_cycle = p
                 await asyncio.sleep(0.001)
@@ -64,12 +64,13 @@ class StepMotor:
             self.lock.release()
 
     def blocking_goto(self, target, speed = 1):
-        async def _run():
-            await self.goTo(target, speed)
+        #async def _run():
+        #    await self.goTo(target, speed)
         try:
-            asyncio.run(_run())
+            loop.run_until_complete(self.goTo(target, speed))
         except Exception as e:
             print("Erreur pendant le mouvement :", e)
+
 
     def goToMin(self):
         return self.goTo(self.min_position)
@@ -82,7 +83,7 @@ class Motion:
     def __init__(self):
         self.lock = asyncio.Lock()
         self.moves = list() # Si plusieurs fois le même moteur, les déplacements ne sont pas effectué simultanément (grâce au lock sur la la class Motor). TODO : Empêcher d'avoir plusieurs fois le même moteur ?
-
+        self.loop = asyncio.get_event_loop()
     def append(self, task):
         self.moves.append(task)
 
@@ -92,7 +93,28 @@ class Motion:
         self.moves = list()
 
     def go(self):
-        loop.run_until_complete(self.go_async())
+        self.loop.run_until_complete(self.go_async())
+
+    def input(self, stepmotor):
+        print("Tape 'a'=up, 'z'=down, 'q'=quit")
+        while True:
+            try:
+                key = input("> ").strip().lower()
+            except KeyboardInterrupt:
+                print("Interrompu.")
+                break
+
+            if key == 'a':
+                self.append(stepmotor.goTo(stepmotor.current_position + 100))
+                self.go()
+            elif key == 'z':
+                self.append(stepmotor.goTo(stepmotor.current_position - 100))
+                self.go()
+            elif key == 'q':
+                print("Sortie.")
+                break
+            else:
+                print("Inconnu.")
 
 
 class Arm:
