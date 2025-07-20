@@ -63,6 +63,14 @@ class StepMotor:
             self.current_position = p
             self.lock.release()
 
+    def blocking_goto(self, target, speed = 1):
+        async def _run():
+            await self.goTo(target, speed)
+        try:
+            asyncio.run(_run())
+        except Exception as e:
+            print("Erreur pendant le mouvement :", e)
+
     def goToMin(self):
         return self.goTo(self.min_position)
 
