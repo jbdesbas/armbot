@@ -64,10 +64,10 @@ class StepMotor:
             self.lock.release()
 
     def goToMin(self):
-        self.goTo(self.min_position)
+        return self.goTo(self.min_position)
 
     def goToMax(self):
-        self.goTo(self.max_position)
+        return self.goTo(self.max_position)
 
 class Motion:
     """A motion is a combinaition of motor motion to reach a position"""
